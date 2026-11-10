@@ -1,0 +1,373 @@
+{
+  "name": "SmartCare - Monitoramento de Manutenção",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        -32
+      ],
+      "id": "8c7c98af-dc5c-40e8-ac73-fafb9eb9a4fd",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://raw.githubusercontent.com/joaogusantoss-sudo/smartcare-project/main/n8n/equipamentos.csv",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -48,
+        -32
+      ],
+      "id": "ef147bb6-60a4-4c06-a334-11aec5279751",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        -32
+      ],
+      "id": "cb8b645c-33f7-4a65-a043-a89526db09a6",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const equipamentos = $input.all();\nreturn equipamentos.map(item => {\n    const dados = item.json;\n    const partes = dados.data_ultima_manutencao.split(\"/\");\n    const ultimaManutencao = new Date(\n        Date.UTC(\n            Number(partes[2]),\n            Number(partes[1]) - 1,\n            Number(partes[0])\n        )\n    );\n    const hoje = new Date();\nconsole.log(hoje.toString());\n\nconst hojeUTC = Date.UTC(\n    hoje.getFullYear(),\n    hoje.getMonth(),\n    hoje.getDate()\n);\n    const proximaManutencao = new Date(\n        ultimaManutencao.getTime() +\n        Number(dados.intervalo_dias) * 86400000\n    );\n    const diasRestantes = Math.round(\n        (proximaManutencao.getTime() - hojeUTC) /\n        86400000\n    );\n    return {\n        json: {\n            ...dados,\n            dias_restantes: diasRestantes\n        }\n    };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -32
+      ],
+      "id": "89fa175b-ebae-421a-8aa8-20313c3f77c8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "680d4221-9847-489d-8245-4deeef81f2ea",
+              "leftValue": "={{ Number($json.dias_restantes) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        608,
+        -80
+      ],
+      "id": "e3cf36f6-40f4-4d85-a32b-cd1484ce9e8d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "20d5f080-a8ec-4b76-9d66-87bcf54b36ee",
+              "leftValue": "={{ Number($json.dias_restantes) }}",
+              "rightValue": 7,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        784,
+        0
+      ],
+      "id": "76ec2756-a819-486c-b513-f7bd186cfa00",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1718611-2169-405f-b593-669f25e866b8",
+              "name": "status",
+              "value": "Atrasada",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        880,
+        -208
+      ],
+      "id": "9f86886a-96c8-4f06-b296-51ad0fffcac7",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e4c4fea5-5e1f-4857-81fd-9a51e772597d",
+              "name": "status",
+              "value": "Proxima do vencimento",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1040,
+        -32
+      ],
+      "id": "d8c62e4b-a5dc-48ab-a550-0196c02c2dfa",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f24ef528-73f7-4628-a654-b0bffa3c36b3",
+              "name": "status",
+              "value": "em dia",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1040,
+        144
+      ],
+      "id": "8f5dc4cc-6ea8-48c7-8984-6dee7acd45bf",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1392,
+        -80
+      ],
+      "id": "5595db06-7313-46ed-9479-5f59f0d60562",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {
+    "Code in JavaScript": [
+      {
+        "json": {
+          "equipamento": "Geladeira",
+          "data_ultima_manutencao": "17/10/2026",
+          "intervalo_dias": "190",
+          "dias_restantes": 166
+        }
+      },
+      {
+        "json": {
+          "equipamento": "Ar-condicionado",
+          "data_ultima_manutencao": "01/11/2026",
+          "intervalo_dias": "10",
+          "dias_restantes": 1
+        }
+      },
+      {
+        "json": {
+          "equipamento": "Maquina de lavar",
+          "data_ultima_manutencao": "01/10/2026",
+          "intervalo_dias": "30",
+          "dias_restantes": -10
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false,
+    "redactCallerExecutions": true
+  },
+  "versionId": "18716126-9306-4ad4-8444-6ae9bfc2752d",
+  "meta": {
+    "instanceId": "7171f777b8ed42487efba1512584cfa2c1e056d1be30169eec07196856345701"
+  },
+  "nodeGroups": [],
+  "id": "sY99SsWMCqmC4dAi",
+  "tags": []
+}
